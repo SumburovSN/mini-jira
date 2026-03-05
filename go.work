@@ -1,0 +1,9 @@
+go 1.25.1
+
+use (
+	./api-gateway
+	./auth-service
+	./notification-service
+	./project-service
+	./task-service
+)
