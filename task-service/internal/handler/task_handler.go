@@ -3,31 +3,39 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"mini-jira/project-service/internal/middleware"
-	"mini-jira/project-service/internal/service"
+	"mini-jira/task-service/internal/middleware"
+	"mini-jira/task-service/internal/service"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type ProjectHandler struct {
-	svc *service.ProjectService
+type TaskHandler struct {
+	svc *service.TaskService
 }
 
-func NewProjectHandler(s *service.ProjectService) *ProjectHandler {
-	return &ProjectHandler{svc: s}
+func NewTaskHandler(s *service.TaskService) *TaskHandler {
+	return &TaskHandler{svc: s}
 }
 
 type createReq struct {
-	Name string `json:"name"`
+	ProjectID   int    `json:"projectID"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	AssigneeID  int    `json:"assigneeID"`
 }
 
 type updateReq struct {
-	Name string `json:"name"`
+	ProjectID   int    `json:"projectID"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	AssigneeID  int    `json:"assigneeID"`
 }
 
-func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -37,35 +45,31 @@ func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// Получаем userID из контекста
 	userID := middleware.UserIDFromContext(r.Context())
 
-	// Создаем проект для этого пользователя
-	p, err := h.svc.Create(r.Context(), req.Name, userID)
+	t, err := h.svc.Create(r.Context(), req.ProjectID, req.Title, req.Description, req.Status, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Возвращаем проект в ответе
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(p)
+	json.NewEncoder(w).Encode(t)
 }
 
-func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Получаем userID из контекста
 	userID := middleware.UserIDFromContext(r.Context())
 
-	// Получаем проекты для пользователя
-	projects, err := h.svc.List(r.Context(), userID)
+	tasks, err := h.svc.List(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Возвращаем список проектов в ответе
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(projects)
+	json.NewEncoder(w).Encode(tasks)
 }
 
-func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -84,7 +88,7 @@ func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *ProjectHandler) GetById(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -94,9 +98,9 @@ func (h *ProjectHandler) GetById(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.UserIDFromContext(r.Context())
 
-	p, err := h.svc.GetById(r.Context(), id, userID)
+	t, err := h.svc.GetById(r.Context(), id, userID)
 	if err != nil {
-		if errors.Is(err, service.ErrProjectNotFound) {
+		if errors.Is(err, service.ErrTaskNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		} else {
@@ -106,10 +110,10 @@ func (h *ProjectHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(p)
+	json.NewEncoder(w).Encode(t)
 }
 
-func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -124,14 +128,14 @@ func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.UserIDFromContext(r.Context())
 
-	err = h.svc.Update(r.Context(), req.Name, id, userID)
+	err = h.svc.Update(r.Context(), req.Title, req.Description, req.Status, id, userID)
 	if err != nil {
-		if errors.Is(err, service.ErrProjectNotFoundOrForbidden) {
+		if errors.Is(err, service.ErrPTaskNotFoundOrForbidden) {
 			http.Error(w, err.Error(), http.StatusForbidden)
 			return
 		}
 
-		if errors.Is(err, service.ErrProjectNameEmpty) {
+		if errors.Is(err, service.ErrTaskTitleEmpty) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

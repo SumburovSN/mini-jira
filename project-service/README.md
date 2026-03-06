@@ -18,3 +18,8 @@ curl -X DELETE localhost:8082/projects/5 \
 
 curl localhost:8082/projects/2 \
   -H "Authorization: Bearer $TOKEN"
+
+curl -X PATCH localhost:8082/projects/1 \
+  -d '{"name":"NewProject"}' \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN"

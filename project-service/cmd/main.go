@@ -43,6 +43,7 @@ func main() {
 	r.Get("/projects", h.List)
 	r.Delete("/projects/{id}", h.Delete)
 	r.Get("/projects/{id}", h.GetById)
+	r.Patch("/projects/{id}", h.Update)
 
 	port := cfg.Port
 	if port == "" {

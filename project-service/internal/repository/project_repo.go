@@ -60,13 +60,16 @@ func (r *ProjectRepository) Delete(ctx context.Context, id int, ownerID int) err
 	}
 
 	if cmd.RowsAffected() == 0 {
-		return errors.New("project not found or forbidden")
+		return ErrProjectNotFoundOrForbidden
 	}
 
 	return nil
 }
 
 var ErrProjectNotFound = errors.New("project not found")
+
+// var ProjectNameEmpty = errors.New("project name is empty")
+var ErrProjectNotFoundOrForbidden = errors.New("project not found or forbidden")
 
 func (r *ProjectRepository) GetById(ctx context.Context, id int, ownerID int) (*model.Project, error) {
 	row := r.db.QueryRow(ctx,
@@ -86,4 +89,25 @@ func (r *ProjectRepository) GetById(ctx context.Context, id int, ownerID int) (*
 	}
 
 	return &p, nil
+}
+
+func (r *ProjectRepository) Update(ctx context.Context, name string, id int, ownerID int) error {
+	// if name == "" {
+	// 	return ProjectNameEmpty
+	// }
+	cmd, err := r.db.Exec(ctx,
+		`UPDATE project.projects
+		 SET name=$1 
+         WHERE id=$2 AND owner_id=$3`,
+		name, id, ownerID,
+	)
+	if err != nil {
+		return err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return ErrProjectNotFoundOrForbidden
+	}
+
+	return nil
 }

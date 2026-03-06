@@ -33,6 +33,8 @@ func (s *ProjectService) Delete(ctx context.Context, id int, ownerID int) error 
 }
 
 var ErrProjectNotFound = errors.New("project not found")
+var ErrProjectNameEmpty = errors.New("project name is empty")
+var ErrProjectNotFoundOrForbidden = errors.New("project not found or forbidden")
 
 func (s *ProjectService) GetById(ctx context.Context, id int, ownerID int) (*model.Project, error) {
 	p, err := s.repo.GetById(ctx, id, ownerID)
@@ -43,4 +45,12 @@ func (s *ProjectService) GetById(ctx context.Context, id int, ownerID int) (*mod
 		return nil, err
 	}
 	return p, nil
+}
+
+func (s *ProjectService) Update(ctx context.Context, name string, id int, ownerID int) error {
+	if name == "" {
+		return ErrProjectNameEmpty
+	}
+
+	return s.repo.Update(ctx, name, id, ownerID)
 }
