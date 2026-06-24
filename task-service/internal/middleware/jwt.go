@@ -35,8 +35,19 @@ func JWTMiddleware(secret []byte) func(http.Handler) http.Handler {
 			}
 
 			// Извлекаем userID из токена
-			claims := token.Claims.(jwt.MapClaims)
-			userID := int(claims["user_id"].(float64))
+			claims, ok := token.Claims.(jwt.MapClaims)
+			if !ok {
+				http.Error(w, "invalid claims", http.StatusUnauthorized)
+				return
+			}
+
+			uidRaw, ok := claims["user_id"]
+			if !ok {
+				http.Error(w, "user_id missing", http.StatusUnauthorized)
+				return
+			}
+
+			userID := int(uidRaw.(float64))
 
 			// Добавляем userID в контекст
 			ctx := context.WithValue(r.Context(), userIDKey, userID)
@@ -46,6 +57,7 @@ func JWTMiddleware(secret []byte) func(http.Handler) http.Handler {
 }
 
 // UserIDFromContext извлекает userID из контекста запроса
-func UserIDFromContext(ctx context.Context) int {
-	return ctx.Value(userIDKey).(int)
+func UserIDFromContext(ctx context.Context) (int, bool) {
+	id, ok := ctx.Value(userIDKey).(int)
+	return id, ok
 }

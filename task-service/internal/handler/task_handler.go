@@ -43,7 +43,11 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем userID из контекста
-	userID := middleware.UserIDFromContext(r.Context())
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
 
 	t, err := h.svc.Create(r.Context(), req.ProjectID, req.Title, req.Description, req.Status, userID)
 	if err != nil {
@@ -57,7 +61,11 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *TaskHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Получаем userID из контекста
-	userID := middleware.UserIDFromContext(r.Context())
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
 
 	tasks, err := h.svc.List(r.Context(), userID)
 	if err != nil {
@@ -77,7 +85,11 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := middleware.UserIDFromContext(r.Context())
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
 
 	err = h.svc.Delete(r.Context(), id, userID)
 	if err != nil {
@@ -96,7 +108,11 @@ func (h *TaskHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := middleware.UserIDFromContext(r.Context())
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
 
 	t, err := h.svc.GetById(r.Context(), id, userID)
 	if err != nil {
@@ -126,11 +142,15 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := middleware.UserIDFromContext(r.Context())
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
 
 	err = h.svc.Update(r.Context(), req.Title, req.Description, req.Status, id, userID)
 	if err != nil {
-		if errors.Is(err, service.ErrPTaskNotFoundOrForbidden) {
+		if errors.Is(err, service.ErrTaskNotFoundOrForbidden) {
 			http.Error(w, err.Error(), http.StatusForbidden)
 			return
 		}

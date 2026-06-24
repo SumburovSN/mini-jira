@@ -46,6 +46,11 @@ func (r *TaskRepository) GetAllByAssignee(ctx context.Context, assigneeID int) (
 		}
 		tasks = append(tasks, t)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return tasks, nil
 }
 
@@ -60,16 +65,16 @@ func (r *TaskRepository) Delete(ctx context.Context, id int, assigneeID int) err
 	}
 
 	if cmd.RowsAffected() == 0 {
-		return ErrProjectNotFoundOrForbidden
+		return ErrTaskNotFoundOrForbidden
 	}
 
 	return nil
 }
 
-var ErrProjectNotFound = errors.New("task not found")
+var ErrTaskNotFound = errors.New("task not found")
 
 // var ProjectNameEmpty = errors.New("project name is empty")
-var ErrProjectNotFoundOrForbidden = errors.New("task not found or forbidden")
+var ErrTaskNotFoundOrForbidden = errors.New("task not found or forbidden")
 
 func (r *TaskRepository) GetById(ctx context.Context, id int, assigneeID int) (*model.Task, error) {
 	row := r.db.QueryRow(ctx,
@@ -83,7 +88,7 @@ func (r *TaskRepository) GetById(ctx context.Context, id int, assigneeID int) (*
 	err := row.Scan(&t.ID, &t.ProjectID, &t.Title, &t.Description, &t.Status, &t.AssigneeID, &t.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrProjectNotFound
+			return nil, ErrTaskNotFound
 		}
 		return nil, err
 	}
@@ -103,7 +108,7 @@ func (r *TaskRepository) Update(ctx context.Context, title string, description s
 	}
 
 	if cmd.RowsAffected() == 0 {
-		return ErrProjectNotFoundOrForbidden
+		return ErrTaskNotFoundOrForbidden
 	}
 
 	return nil

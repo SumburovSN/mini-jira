@@ -21,7 +21,10 @@ func (s *TaskService) Create(ctx context.Context, projectID int, title string, d
 		Title:       title,
 		Description: description,
 		Status:      status,
-		AssigneeID:  assigneeID,
+		AssigneeID:  &assigneeID,
+	}
+	if title == "" {
+		return nil, ErrTaskTitleEmpty
 	}
 	err := s.repo.Create(ctx, t)
 	return t, err
@@ -37,12 +40,12 @@ func (s *TaskService) Delete(ctx context.Context, id int, assigneeID int) error 
 
 var ErrTaskNotFound = errors.New("task not found")
 var ErrTaskTitleEmpty = errors.New("task title is empty")
-var ErrPTaskNotFoundOrForbidden = errors.New("task not found or forbidden")
+var ErrTaskNotFoundOrForbidden = errors.New("task not found or forbidden")
 
 func (s *TaskService) GetById(ctx context.Context, id int, assigneeID int) (*model.Task, error) {
 	p, err := s.repo.GetById(ctx, id, assigneeID)
 	if err != nil {
-		if errors.Is(err, repository.ErrProjectNotFound) {
+		if errors.Is(err, repository.ErrTaskNotFound) {
 			return nil, ErrTaskNotFound
 		}
 		return nil, err

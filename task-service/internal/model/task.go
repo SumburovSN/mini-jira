@@ -8,6 +8,6 @@ type Task struct {
 	Title       string
 	Description string
 	Status      string
-	AssigneeID  int
+	AssigneeID  *int
 	CreatedAt   time.Time
 }

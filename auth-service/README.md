@@ -1,3 +1,5 @@
+./run-auth.sh
+
 curl -X POST localhost:8081/register \
   -d '{"email":"admin@example.com","password":"123"}' \
   -H "Content-Type: application/json" 

@@ -6,4 +6,5 @@ use (
 	./notification-service
 	./project-service
 	./task-service
+	./members-service
 )

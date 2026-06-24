@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"mini-jira/auth-service/internal/model"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -46,3 +47,41 @@ func (r *UserRepository) GetByID(ctx context.Context, id int) (*model.User, erro
 	}
 	return &u, nil
 }
+
+func (r *UserRepository) UpdateEmail(ctx context.Context, userID int, email string) error {
+	cmd, err := r.db.Exec(ctx,
+		`UPDATE auth.users
+		 SET email=$2
+		 WHERE id=$1`,
+		userID, email,
+	)
+	if err != nil {
+		return err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *UserRepository) UpdatePasswordHash(ctx context.Context, userID int, hash string) error {
+	cmd, err := r.db.Exec(ctx,
+		`UPDATE auth.users
+		 SET password_hash=$2
+		 WHERE id=$1`,
+		userID, hash,
+	)
+	if err != nil {
+		return err
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
+}
+
+var ErrUserNotFound = errors.New("user not found")
