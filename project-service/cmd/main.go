@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,6 +12,7 @@ import (
 	"mini-jira/project-service/internal/handler"
 	"mini-jira/project-service/internal/middleware"
 	"mini-jira/project-service/internal/repository"
+	"mini-jira/project-service/internal/router"
 	"mini-jira/project-service/internal/service"
 )
 
@@ -24,26 +24,32 @@ func main() {
 		log.Fatal("DB_URL is not set")
 	}
 
+	jwtSecret := cfg.JWTSecret
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET is not set")
+	}
+
 	db, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
-	repo := repository.NewProjectRepository(db)
-	svc := service.NewProjectService(repo)
-	h := handler.NewProjectHandler(svc)
+	projectRepo := repository.NewProjectRepository(db)
+	projectService := service.NewProjectService(projectRepo)
+	projectHandler := handler.NewProjectHandler(projectService)
+
+	memberRepo := repository.NewMemberRepository(db)
+	memberService := service.NewMemberService(memberRepo)
+	memberHandler := handler.NewMemberHandler(memberService)
 
 	r := chi.NewRouter()
 
 	// Добавляем JWT Middleware для защиты маршрутов
-	r.Use(middleware.JWTMiddleware([]byte(os.Getenv("JWT_SECRET"))))
+	r.Use(middleware.JWTMiddleware([]byte(jwtSecret)))
 
-	// Роуты
-	r.Post("/projects", h.Create)
-	r.Get("/projects", h.List)
-	r.Delete("/projects/{id}", h.Delete)
-	r.Get("/projects/{id}", h.GetById)
-	r.Patch("/projects/{id}", h.Update)
+	router.RegisterProjectRoutes(r, projectHandler)
+	router.RegisterMemberRoutes(r, memberHandler)
 
 	port := cfg.Port
 	if port == "" {
@@ -51,5 +57,8 @@ func main() {
 	}
 
 	log.Println("Project service running on " + port)
-	http.ListenAndServe(":"+port, r)
+
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatal(err)
+	}
 }

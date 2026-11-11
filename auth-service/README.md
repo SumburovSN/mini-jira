@@ -1,4 +1,4 @@
-./run-auth.sh
+./run-auth.sh (/mini-jira$ ./run-auth.sh)
 
 curl -X POST localhost:8081/register \
   -d '{"email":"admin@example.com","password":"123"}' \
